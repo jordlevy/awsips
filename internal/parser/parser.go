@@ -19,7 +19,6 @@ type AWSIPRanges struct {
 }
 
 func FetchIPRanges() (*AWSIPRanges, error) {
-	fmt.Println("📡 Fetching AWS IP ranges from", config.Config.AWSIPRangesURL)
 	resp, err := http.Get(config.Config.AWSIPRangesURL)
 	if err != nil {
 		return nil, fmt.Errorf("❌ Failed to fetch AWS IP ranges: %w", err)
@@ -43,7 +42,5 @@ func FetchIPRanges() (*AWSIPRanges, error) {
 	if err := json.Unmarshal(body, &ipRanges); err != nil {
 		return nil, fmt.Errorf("❌ Failed to parse JSON: %w", err)
 	}
-
-	fmt.Println("✅ Successfully fetched and parsed AWS IP ranges.")
 	return &ipRanges, nil
 }

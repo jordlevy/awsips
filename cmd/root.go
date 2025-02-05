@@ -7,10 +7,11 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"os"
+	"text/tabwriter"
 )
 
 func Execute() {
-	// Define CLI flags with shorthand options
 	region := flag.String("region", "", "Filter by AWS region (-r)")
 	service := flag.String("service", "", "Filter by AWS service (-s)")
 	list := flag.Bool("list", false, "List available regions and services (-l)")
@@ -28,17 +29,18 @@ func Execute() {
 		return
 	}
 
-	// Load config and fetch data
 	config.LoadConfig()
 	ipRanges, err := parser.FetchIPRanges()
 	if err != nil {
 		log.Fatalf("❌ Error: %v", err)
 	}
 
-	// Handle CLI logic using switch
 	switch {
+	case *list && *region != "":
+		filter.ListServicesByRegion(ipRanges, *region)
+	case *list && *service != "":
+		filter.ListRegionsByService(ipRanges, *service)
 	case *list:
-		fmt.Println("📜 Listing available regions and services:")
 		filter.ListRegions(ipRanges)
 		filter.ListServices(ipRanges)
 	case *region != "" && *service != "":
@@ -53,14 +55,31 @@ func Execute() {
 }
 
 func showHelp() {
-	fmt.Println(`🛠 awsips - AWS IP Ranges CLI 🛠
+	commands := []struct {
+		Command     string
+		Description string
+	}{
+		{"awsips --list | -l", "List all available regions and services"},
+		{"awsips --region REGION | -r REGION", "Show IPs for a given region"},
+		{"awsips --service SERVICE | -s SERVICE", "Show IPs for a given service"},
+		{"awsips --region R --service S | -r R -s S", "Show IPs for a specific region and service"},
+		{"awsips --help | -h", "Show this help menu"},
+	}
 
-📌 Usage:
-  🔹 awsips --list | -l                📜 List all available regions and services
-  🔹 awsips --region REGION | -r REGION 🌍 Show IPs for a given region
-  🔹 awsips --service SERVICE | -s SERVICE 🏗  Show IPs for a given service
-  🔹 awsips --region R --service S | -r R -s S 🔍 Show IPs for a specific region and service
-  🔹 awsips --help | -h                ℹ️  Show this help menu
+	fmt.Println("☁️ awsips - A neat little tool for parsing AWS IPs. ☁️")
+	fmt.Println("📌 Usage:")
 
-✨ Easily copy and use AWS IP ranges for your networking needs! ✨`)
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+	for _, entry := range commands {
+		if _, err := fmt.Fprintf(w, "  🔹 %s\t%s\n", entry.Command, entry.Description); err != nil {
+			log.Printf("Error writing help output: %v", err)
+			return
+		}
+	}
+
+	if err := w.Flush(); err != nil {
+		log.Printf("Error flushing help output: %v", err)
+		return
+	}
+	fmt.Println("\n✨ Easily copy and use AWS IP ranges for your networking needs! ✨")
 }

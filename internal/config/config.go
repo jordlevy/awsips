@@ -29,13 +29,15 @@ func LoadConfig() {
 		Config.AWSIPRangesURL = defaultURL
 		return
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			fmt.Println("⚠️ Warning: Failed to close config file:", err)
+		}
+	}()
 
 	decoder := json.NewDecoder(file)
 	if err := decoder.Decode(&Config); err != nil {
 		fmt.Println("❌ Error parsing config file:", err)
 		Config.AWSIPRangesURL = defaultURL
-	} else {
-		fmt.Println("✅ Successfully loaded config from", configPath)
 	}
 }
