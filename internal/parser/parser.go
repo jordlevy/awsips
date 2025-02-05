@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
-	"time"
 )
 
 type AWSIPRanges struct {
@@ -19,14 +19,16 @@ type AWSIPRanges struct {
 }
 
 func FetchIPRanges() (*AWSIPRanges, error) {
-	client := &http.Client{Timeout: 10 * time.Second} // Timeout for reliability
-
 	fmt.Println("📡 Fetching AWS IP ranges from", config.Config.AWSIPRangesURL)
-	resp, err := client.Get(config.Config.AWSIPRangesURL)
+	resp, err := http.Get(config.Config.AWSIPRangesURL)
 	if err != nil {
 		return nil, fmt.Errorf("❌ Failed to fetch AWS IP ranges: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			log.Println("⚠️ Warning: Failed to close response body:", err)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("❌ Received non-200 response: %d", resp.StatusCode)
